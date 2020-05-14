@@ -6,10 +6,10 @@
       console.log(error);
     });
 
-    // Create an array of sample IDs from JSON data
+    // Create an array of sample objects from JSON data
     var names = samplesData.names;
 
-    // Create array of smaple objects
+    // Create array of sample objects
     var sample = samplesData.samples;
 
     // Create array of sample metadata objects
@@ -34,99 +34,97 @@
 
     // Create event handler
     selectDrop.on("change",runEnter);
-
     // Event handler function
     function runEnter() {
+      // Prevent the page from refreshing
+      d3.event.preventDefault();
+      // Select the input element and get HTML node
+      var inputElement = d3.select("select");
+      // Get the value property of the input element
+      var userSample = inputElement.property("value");
 
-    // Prevent the page from refreshing
-    d3.event.preventDefault();
+      // Use the input to filter the data by ID
+      var sampleResult = sample.filter(s => userSample === s.id)[0];
+      var sampleMeta = metadata.filter(m => +userSample === m.id);
 
-    // Select the input element and get HTML node
-    var inputElement = d3.select("select");
-    console.log(inputElement);
-
-    // Get the value property of the input element
-    var userSample = inputElement.property("value");
-    console.log(userSample);
-
-    // Use the input to filter the data by ID
-    var sampleResult = sample.filter(s => userSample === s.id)[0];
-    var sampleMeta = metadata.filter(m => +userSample === m.id);
-    console.log(sampleMeta);
-
-    // Convert OTU IDs to an array of strings
-    var otuIds = [];
-    for (i=0;i<sampleResult.otu_ids.length;i++){
-      otuIds.push(`OTU ${sampleResult.otu_ids[i]}`);
-    }
-    console.log(otuIds);
-
-
-    // Trace for bar chart
-    var trace1 = {
-      x: sampleResult.sample_values.slice(0,11).reverse(),
-      y: otuIds.slice(0,11).reverse(),
-      labels: otuIds.slice(0,11).reverse(),
-      text: sampleResult.otu_labels.slice(0,11).reverse(),
-      type:"bar",
-      orientation: "h"
-    };
-
-    // Layout for bar chart
-    var barLayout = {
-      height: 600,
-      width: 800,
-    };
-
-    // Put trace1 in an array
-    var barData = [trace1];
-
-    // Use Plotly to plot bar chart
-    Plotly.newPlot("bar", barData, barLayout);
-    
-    // Trace for bubble chart
-    var trace2 = {
-      x: sampleResult.otu_ids,
-      y: sampleResult.sample_values,
-      text: sampleResult.otu_labels,
-      mode: 'markers',
-      marker: {
-        size: sampleResult.sample_values,
-        color: sampleResult.otu_ids
+      // SORTING DATA
+      // Combine the arrays from "samples" key
+      var sampleObject = [];
+      for (var i = 0; i < sampleResult.sample_values.length; i++) {
+        sampleObject.push(
+          {sample_values: sampleResult.sample_values[i], 
+          otuIds: `OTU ${sampleResult.otu_ids[i]}`,
+          otuLabels: sampleResult.otu_labels[i]});
       }
-    };
-    
-    // Put trace2 in an array
-    var bubbleData = [trace2];
-    
-    // Layout for bubble chart
-    var bubbleLayout = {
-      height: 600,
-      width: 1200
-    };
-          
-    // Use Plotly to plot bubble chart
-    Plotly.newPlot('bubble', bubbleData, bubbleLayout);
+      // Sort the new array
+      var sortedSample = sampleObject.sort((a, b) => b.sample_values - a.sample_values);
+      // Create new arrays to hold sorted data
+      var sampleValues = []
+      var otuIds = []
+      var otuLabels = []
+      // Unpack objects from "sortedSample" into empty arrays
+      for (var j = 0; j < sortedSample.length; j++) {
+        sampleValues.push(sortedSample[j].sample_values);
+        otuIds.push(sortedSample[j].otuIds);
+        otuLabels.push(sortedSample[j].otuLabels);
+      }
 
-    // Set selection variable to update metadata info
-    var selection = d3.select("#sample-metadata").selectAll("div")
-      .data(sampleMeta);
+      // CREATE BAR CHART
+      // Trace for bar chart
+      var traceBar = [{
+        x: sampleValues.slice(0,10).reverse(),
+        y: otuIds.slice(0,10).reverse(),
+        labels: otuIds.slice(0,10).reverse(),
+        text: otuLabels.slice(0,10).reverse(),
+        type:"bar",
+        orientation: "h"
+      }];
+      // Layout for bar chart
+      var barLayout = {
+        height: 600,
+        width: 800,
+      };
+      // Use Plotly to plot bar chart
+      Plotly.newPlot("bar", traceBar, barLayout);
 
-    // Populate the "Demographic Info" box with sample metadata info
-    selection.enter()
-      .append("div")
-      .merge(selection)
-      .html(function(d){
-        return `<p>ID: ${d.id}</p>
-              <p>Ethnicity: ${d.ethnicity}</p>
-              <p>Gender: ${d.gender}</p>
-              <p>Age: ${d.age}</p>
-              <p>Location: ${d.location}</p>
-              <p>bbtype: ${d.bbtype}</p>
-              <p>wfreq: ${d.wfreq}</p>`
-      });
+      // CREATE BUBBLE CHART
+      // Trace for bubble chart
+      var traceBubble = [{
+        x: sampleResult.otu_ids,
+        y: sampleValues,
+        text: otuLabels,
+        mode: 'markers',
+        marker: {
+          size: sampleValues,
+          color: sampleResult.otu_ids
+        }
+      }];
+      // Layout for bubble chart
+      var bubbleLayout = {
+        height: 600,
+        width: 1200
+      };      
+      // Use Plotly to plot bubble chart
+      Plotly.newPlot('bubble', traceBubble, bubbleLayout);
 
-    // Remove old data
-    selection.exit().remove();
+      // POPULATE INFO BOX
+      // Set selection variable to update metadata info
+      var selection = d3.select("#sample-metadata").selectAll("div")
+        .data(sampleMeta);
+      // Populate the "Demographic Info" box with sample metadata info
+      selection.enter()
+        .append("div")
+        .merge(selection)
+        .html(function(d){
+          return `<p>ID: ${d.id}</p>
+                <p>Ethnicity: ${d.ethnicity}</p>
+                <p>Gender: ${d.gender}</p>
+                <p>Age: ${d.age}</p>
+                <p>Location: ${d.location}</p>
+                <p>bbtype: ${d.bbtype}</p>
+                <p>wfreq: ${d.wfreq}</p>`
+        });
+      // Remove old data
+      selection.exit().remove();
   }
 })()
