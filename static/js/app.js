@@ -82,7 +82,7 @@
       // Layout for bar chart
       var barLayout = {
         height: 600,
-        width: 800,
+        width: 500,
       };
       // Use Plotly to plot bar chart
       Plotly.newPlot("bar", traceBar, barLayout);
@@ -102,10 +102,42 @@
       // Layout for bubble chart
       var bubbleLayout = {
         height: 600,
-        width: 1200
+        width: 1200,
+        xaxis: {title: "OTU ID"}
       };      
       // Use Plotly to plot bubble chart
       Plotly.newPlot('bubble', traceBubble, bubbleLayout);
+
+      // CREATE GAUGE CHART
+      // Trace for gauge chart
+      var traceGauge = [
+        {
+        domain: {x: [0, 1], y: [0, 1]},
+        value: sampleMeta[0].wfreq,
+        title: {text: "Belly Button Wash Frequency (Scrubs Per Week)"},
+        type: "indicator",
+        mode: "gauge+number",
+            gauge: {
+              axis: {range: [null, 9]},
+              bar: {color: "blue"},
+              steps: [
+                {range: [0, 1], color: "darkred"},
+                {range: [1, 2], color: "red"},
+                {range: [2, 3], color: "orange"},
+                {range: [3, 4], color: "gold"},
+                {range: [4, 5], color: "yellow"},
+                {range: [5, 6], color: "lightyellow"},
+                {range: [6, 7], color: "lightgreen"},
+                {range: [7, 8], color: "green"},
+                {range: [8, 9], color: "darkgreen"}
+              ],
+            }
+        }
+        ];
+        // Layout for gauge chart
+        var traceLayout = { width: 600, height: 500, margin: { t: 0, b: 0,}};
+      // Use Plotly to plot gauge chart
+        Plotly.newPlot('gauge', traceGauge, traceLayout);
 
       // POPULATE INFO BOX
       // Set selection variable to update metadata info
